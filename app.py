@@ -66,15 +66,6 @@ with tab1:
         audio_file = uploaded_file
         audio_source = "Uploaded"
 
-# --- Recording Section ---
-with tab2:
-    st.write("Click below to record your voice 🎙️")
-    recorded_audio = st_audiorec()
-    if recorded_audio is not None:
-        audio_file = BytesIO(recorded_audio)
-        st.audio(audio_file, format="audio/wav")
-        audio_source = "Recorded"
-
 # -----------------------------
 # Process the audio (upload or mic)
 # -----------------------------
@@ -180,3 +171,4 @@ if audio_file is not None:
 
     except Exception as e:
         st.error(f"⚠️ Error during prediction: {e}")
+
