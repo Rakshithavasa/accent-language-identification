@@ -3,19 +3,11 @@ import numpy as np
 import librosa
 import soundfile as sf
 import joblib
-import matplotlib.pyplot as plt
-import librosa.display
 import pandas as pd
 import datetime
 import os
-
 from io import BytesIO
-with tab2:
-    st.write("Click the microphone below and speak a short sentence 🎙️")
-    recorded_audio = st_audiorec()
-    if recorded_audio is not None:
-        audio_file = BytesIO(recorded_audio)
-        st.audio(audio_file, format="audio/wav")
+from st_audiorec import st_audiorec  # 🎤 mic input
 
 # -----------------------------
 # Streamlit Page Configuration
@@ -59,78 +51,49 @@ except Exception as e:
     st.error(f"❌ Error loading model files: {e}")
 
 # -----------------------------
-# Streamlit UI
+# Streamlit Tabs
 # -----------------------------
-st.title("🎧 Accent / Language Identification App")
-st.write("Upload a `.wav` file or record your voice below to detect the accent or language.")
-
-# --- Tabs for Upload or Record ---
-tab1, tab2 = st.tabs(["📁 Upload Audio", "🎤 Record Voice"])
+tab1, tab2 = st.tabs(["📁 Upload File", "🎤 Record Voice"])
 
 audio_file = None
-uploaded_file = None  # Track upload status
+audio_source = None
 
-# -----------------------------
-# OPTION 1: Upload Audio File
-# -----------------------------
+# --- Upload Section ---
 with tab1:
-    uploaded_file = st.file_uploader("Choose a `.wav` file", type=["wav"])
+    uploaded_file = st.file_uploader("Upload a `.wav` file", type=["wav"])
     if uploaded_file is not None:
-        audio_file = uploaded_file
         st.audio(uploaded_file, format="audio/wav")
+        audio_file = uploaded_file
+        audio_source = "Uploaded"
 
-# -----------------------------
-# OPTION 2: Record Audio
-# -----------------------------
+# --- Recording Section ---
 with tab2:
-    st.write("Click the microphone below and speak a short sentence 🎙️")
+    st.write("Click below to record your voice 🎙️")
     recorded_audio = st_audiorec()
     if recorded_audio is not None:
         audio_file = BytesIO(recorded_audio)
         st.audio(audio_file, format="audio/wav")
+        audio_source = "Recorded"
 
 # -----------------------------
-# PROCESS AUDIO IF AVAILABLE
+# Process the audio (upload or mic)
 # -----------------------------
 if audio_file is not None:
     audio_data, sr = sf.read(audio_file)
 
-    # --- Visualization ---
-    #st.subheader("🎶 Audio Visualization")
-
-    # Waveform
-    #fig, ax = plt.subplots()
-    #librosa.display.waveshow(audio_data, sr=sr, ax=ax, color="#007bff")
-    #ax.set_title("Waveform", fontsize=12)
-    #st.pyplot(fig)
-
-    # Spectrogram
-    #X = librosa.stft(audio_data.astype(float))
-    #Xdb = librosa.amplitude_to_db(abs(X))
-    #fig, ax = plt.subplots()
-    #librosa.display.specshow(Xdb, sr=sr, x_axis="time", y_axis="hz", ax=ax, cmap="magma")
-    #ax.set_title("Spectrogram", fontsize=12)
-    #st.pyplot(fig)
-
-    # --- Feature Extraction ---
     if audio_data.ndim > 1:
         audio_data = np.mean(audio_data, axis=1)
-    # Ensure audio is long enough
+
     if len(audio_data) < sr * 0.5:
-        st.warning("⚠️ Audio too short! Please record at least 1 second.")
+        st.warning("⚠️ Audio too short! Please record or upload at least 1 second.")
         st.stop()
-    # Extract MFCC features (13 coefficients)
+
+    # Extract MFCC
     mfcc = librosa.feature.mfcc(y=audio_data, sr=sr, n_mfcc=13)
+    mfcc_mean = np.mean(mfcc, axis=1).reshape(1, -1)
 
-    # Average each MFCC coefficient across time
-    mfcc_mean = np.mean(mfcc, axis=1)
-
-    # Reshape to (1, 13)
-    mfcc_scaled = mfcc_mean.reshape(1, -1)
-    
-    # --- Prediction ---
     try:
-        features_scaled = scaler.transform(mfcc_scaled)
+        features_scaled = scaler.transform(mfcc_mean)
         prediction = model.predict(features_scaled)
         predicted_label = encoder.inverse_transform(prediction)[0]
 
@@ -139,9 +102,11 @@ if audio_file is not None:
             if hasattr(model, "predict_proba")
             else 0
         )
+
+        # Log data
         log_data = {
             "timestamp": [datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
-            "source": ["Uploaded" if uploaded_file else "Recorded"],
+            "source": [audio_source],
             "predicted_language": [predicted_label],
             "confidence": [f"{confidence:.2f}"]
         }
@@ -150,9 +115,8 @@ if audio_file is not None:
             log_df.to_csv("user_predictions.csv", index=False)
         else:
             log_df.to_csv("user_predictions.csv", mode="a", header=False, index=False)
-    
-    
-        # --- Stylish Result Card ---
+
+        # Display result
         st.markdown(
             f"""
             <div style="
@@ -175,7 +139,7 @@ if audio_file is not None:
         st.markdown("### 🍴 Accent-Aware Cuisine Recommendation")
 
         cuisine_dict = {
-            "English": ["grilled chciken", "tacos", "pizza", "burger"],
+            "English": ["Grilled Chicken", "Tacos", "Pizza", "Burger"],
             "Tamil": ["Dosa", "Idli", "Sambar", "Rasam"],
             "Hindi": ["Butter Chicken", "Paneer Tikka", "Dal Makhani"],
             "Telugu": ["Pesarattu", "Pulihora", "Gutti Vankaya Curry"],
@@ -189,7 +153,6 @@ if audio_file is not None:
             "Marathi": ["Pav Bhaji", "Misal Pav", "Puran Poli"],
             "Punjabi": ["Sarson da Saag", "Makki di Roti", "Lassi"],
             "Bengali": ["Machher Jhol", "Rasgulla", "Mishti Doi"],
-
         }
 
         if predicted_label in cuisine_dict:
@@ -203,7 +166,7 @@ if audio_file is not None:
 
         # --- Download Result ---
         result_df = pd.DataFrame({
-            "Source": ["Uploaded" if uploaded_file else "Recorded"],
+            "Source": [audio_source],
             "Predicted Accent/Language": [predicted_label],
             "Confidence (%)": [f"{confidence:.2f}"]
         })
@@ -217,4 +180,3 @@ if audio_file is not None:
 
     except Exception as e:
         st.error(f"⚠️ Error during prediction: {e}")
-
