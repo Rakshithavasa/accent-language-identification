@@ -2,9 +2,7 @@ streamlit
 librosa
 soundfile
 joblib
-numpy
-pandas
 matplotlib
-scikit-learn
-altair
-
+pandas
+numpy
+st-audiorec
