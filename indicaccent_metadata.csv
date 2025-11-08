@@ -1,0 +1,12 @@
+filename,language,age_group,utterance_type
+0_0.wav,English,Adult,Word
+1_0.wav,Hindi,Child,Word
+2_0.wav,Tamil,Adult,Sentence
+3_0.wav,Telugu,Adult,Word
+4_0.wav,Malayalam,Child,Sentence
+5_0.wav,Kannada,Adult,Sentence
+6_0.wav,Bengali,Adult,Word
+7_0.wav,Gujarati,Child,Word
+8_0.wav,Marathi,Adult,Sentence
+9_0.wav,Punjabi,Adult,Word
+
