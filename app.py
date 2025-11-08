@@ -10,7 +10,12 @@ import datetime
 import os
 
 from io import BytesIO
-from st_audiorec import st_audiorec  # 🎤 For real-time recording
+with tab2:
+    st.write("Click the microphone below and speak a short sentence 🎙️")
+    recorded_audio = st_audiorec()
+    if recorded_audio is not None:
+        audio_file = BytesIO(recorded_audio)
+        st.audio(audio_file, format="audio/wav")
 
 # -----------------------------
 # Streamlit Page Configuration
@@ -212,3 +217,4 @@ if audio_file is not None:
 
     except Exception as e:
         st.error(f"⚠️ Error during prediction: {e}")
+
